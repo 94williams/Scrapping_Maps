@@ -21,6 +21,23 @@ ubicaciones = [
     {"nombre": "Roma", "lat": 19.386144, "lng": -99.174169},
     {"nombre": "Condesa", "lat": 19.4125, "lng": -99.1694},
     {"nombre": "Juárez", "lat": 19.42755, "lng": -99.16088},
+    {"nombre": "Santa María la Ribera", "lat": 19.44935, "lng": -99.157275},
+    {"nombre": "Del Valle", "lat": 19.38611, "lng": -99.16204},
+    {"nombre": "San Miguel Chapultepec", "lat": 19.411473, "lng": -99.188521},
+    {"nombre": "Reforma", "lat": 19.430546, "lng": -99.161421},
+    {"nombre": "Santa Fe", "lat": 19.399056, "lng": -99.1982303},
+    {"nombre": "Álvaro Obregón", "lat": 19.390806, "lng": -99.195413},
+    {"nombre": "Azcapotzalco", "lat": 19.484102, "lng": -99.18436},
+    {"nombre": "Cuajimalpa de Morelos", "lat": 19.35735, "lng": -99.299792},
+    {"nombre": "Gustavo A. Madero", "lat": 19.482945, "lng": -99.113471},
+    {"nombre": "Iztacalco", "lat": 19.395901, "lng": -99.097612},
+    {"nombre": "Iztapalapa", "lat": 19.359004, "lng": -99.092622},
+    {"nombre": "La Magdalena Contreras", "lat": 19.304898, "lng": -99.241515},
+    {"nombre": "Milpa Alta", "lat": 19.191249, "lng": -99.023371},
+    {"nombre": "Tláhuac", "lat": 19.270566, "lng": -99.004846},
+    {"nombre": "Venustiano Carranza", "lat": 19.419261, "lng": -99.113701},
+    {"nombre": "Xochimilco", "lat": 19.263462, "lng": -99.104913},
+    {"nombre": "Tlalnepantla", "lat": 19.5825, "lng": -99.2217},
 ]
 
 # Lista para guardar los resultados
@@ -35,34 +52,34 @@ def desplazamiento_infinito():
         while True:
             driver.execute_script("arguments[0].scrollBy(0, 2500);", panel_resultados)
             time.sleep(3)
-            cafeterias = driver.find_elements(By.CSS_SELECTOR, ".Nv2PK")
+            restaurantes = driver.find_elements(By.CSS_SELECTOR, ".Nv2PK")
 
-            if len(cafeterias) == prev_count:
+            if len(restaurantes) == prev_count:
                 break
 
-            prev_count = len(cafeterias)
+            prev_count = len(restaurantes)
     except Exception as e:
         print(f"Error durante el desplazamiento: {e}")
 
 # Iterar sobre cada ubicación
 for ubicacion in ubicaciones:
-    print(f"\nBuscando cafeterías en {ubicacion['nombre']}...")
-    url = f"https://www.google.com/maps/search/cafeterías/@{ubicacion['lat']},{ubicacion['lng']},14z"
+    print(f"\nBuscando restaurantes en {ubicacion['nombre']}...")
+    url = f"https://www.google.com/maps/search/restaurantes/@{ubicacion['lat']},{ubicacion['lng']},14z"
     driver.get(url)
     time.sleep(10)  # Esperar carga inicial
     desplazamiento_infinito()
 
-    cafeterias = driver.find_elements(By.CSS_SELECTOR, ".Nv2PK")
-    print(f"{len(cafeterias)} cafeterías encontradas en {ubicacion['nombre']}.")
+    restaurantes = driver.find_elements(By.CSS_SELECTOR, ".Nv2PK")
+    print(f"{len(restaurantes)} restaurantes encontrados en {ubicacion['nombre']}.")
 
-    for cafeteria in cafeterias:
+    for restaurante in restaurantes:
         try:
-            nombre = cafeteria.find_element(By.CSS_SELECTOR, ".qBF1Pd").text
-            direccion = cafeteria.find_element(By.CSS_SELECTOR, ".W4Efsd").text
+            nombre = restaurante.find_element(By.CSS_SELECTOR, ".qBF1Pd").text
+            direccion = restaurante.find_element(By.CSS_SELECTOR, ".W4Efsd").text
 
             # Extraer sitio web (si está disponible)
             try:
-                sitio_web_element = cafeteria.find_element(By.CSS_SELECTOR, "a[href^='https://']")
+                sitio_web_element = restaurante.find_element(By.CSS_SELECTOR, "a[href^='https://']")
                 sitio_web = sitio_web_element.get_attribute("href")
             except:
                 sitio_web = "No disponible"
@@ -75,14 +92,14 @@ for ubicacion in ubicaciones:
             })
 
         except Exception as e:
-            print(f"Error extrayendo datos de una cafetería: {e}")
+            print(f"Error extrayendo datos del restaurante: {e}")
 
     time.sleep(5)  # Pausa entre zonas
 
 # Guardar resultados si se encontraron datos
 if data:
     df = pd.DataFrame(data)
-    nombre_archivo = f"cafeterias_CDMX_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    nombre_archivo = f"restaurantes_CDMX_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     df.to_excel(nombre_archivo, index=False, engine='openpyxl')
     print(f"\n✅ Datos exportados exitosamente a '{nombre_archivo}'.")
 else:
