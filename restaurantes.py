@@ -5,18 +5,12 @@ from webdriver_manager.chrome import ChromeDriverManager
 import time
 import pandas as pd
 
-# Usamos webdriver_manager para obtener y manejar ChromeDriver automáticamente
+# Usamos webdriver_manager para manejar ChromeDriver automáticamente
 driver_path = ChromeDriverManager().install()
-
-# Crear un servicio con la ruta del ChromeDriver
 service = Service(driver_path)
-
-# Inicia el navegador con Selenium usando el servicio
 driver = webdriver.Chrome(service=service)
 
-# Lista de ubicaciones a buscar (en coordenadas latitud, longitud)
-
-## modificar de cada uno la latitud y longitud
+# Lista de ubicaciones a buscar (coordenadas lat, lng)
 ubicaciones = [
     {"nombre": "Benito Juárez", "lat": 19.371992, "lng": -99.157853},
     {"nombre": "Coyoacán", "lat": 19.350214, "lng": -99.162146},
@@ -46,75 +40,67 @@ ubicaciones = [
     {"nombre": "Tlalnepantla", "lat": 19.5825, "lng": -99.2217},
 ]
 
-# Creamos una lista para almacenar la información de los restaurantes
+# Lista para almacenar los datos extraídos
 data = []
 
 # Iterar sobre las ubicaciones
 for ubicacion in ubicaciones:
     print(f"Buscando restaurantes en {ubicacion['nombre']}...")
 
-    # Construir la URL para cada ubicación con coordenadas lat, lng
+    # Construir la URL para cada ubicación
     url = f"https://www.google.com/maps/search/restaurantes/@{ubicacion['lat']},{ubicacion['lng']},14z"
     driver.get(url)
 
-    # Espera para que la página cargue completamente
+    # Espera para que la página cargue
     time.sleep(15)
 
     # Desplazamiento hacia abajo para cargar más resultados
-    for _ in range(30):  # Ajusta el número de veces que el navegador se desplazará hacia abajo
+    for _ in range(30):
         driver.execute_script("window.scrollBy(0, 1000);")
         time.sleep(3)
 
-    # Extrae los elementos que contienen la información de los restaurantes
+    # Extrae los elementos con la información de los restaurantes
     restaurantes = driver.find_elements(By.CSS_SELECTOR, ".Nv2PK")
 
-    # Verifica si hay restaurantes encontrados
     if restaurantes:
         print(f"Se encontraron {len(restaurantes)} restaurantes en {ubicacion['nombre']}.\n")
 
-        # Iterar sobre los resultados encontrados
         for restaurante in restaurantes:
             try:
                 nombre = restaurante.find_element(By.CSS_SELECTOR, ".qBF1Pd").text
                 direccion = restaurante.find_element(By.CSS_SELECTOR, ".W4Efsd").text
-                tipo_comida = "No disponible"  # No se puede obtener directamente en Google Maps
 
-                # Intentamos obtener información adicional (correo y redes sociales)
+                # Intentar obtener la URL del negocio si está disponible
                 try:
-                    # Buscar redes sociales (si están disponibles)
+                    url_negocio = restaurante.find_element(By.CSS_SELECTOR, "a").get_attribute("href")
+                except:
+                    url_negocio = "No disponible"
+
+                # Intentar obtener redes sociales si están disponibles
+                try:
                     redes_sociales = restaurante.find_elements(By.CSS_SELECTOR, "a[href*='facebook.com'], a[href*='instagram.com'], a[href*='twitter.com']")
                     redes = [red.get_attribute('href') for red in redes_sociales]
-                    correo = "No disponible"  # No se puede obtener fácilmente desde Google Maps
-
-                except Exception as e:
+                except:
                     redes = []
-                    correo = "No disponible"
-                    print(f"Error al extraer redes sociales o correo: {e}")
 
-                # Agregar los datos a la lista
                 data.append({
                     "Nombre": nombre,
                     "Dirección": direccion,
-                    "Tipo de comida": tipo_comida,
-                    "Correo electrónico": correo,
-                    "Redes sociales": ", ".join(redes),
+                    "Página Web": url_negocio,
+                    "Redes Sociales": ", ".join(redes),
                     "Zona": ubicacion["nombre"]
                 })
 
             except Exception as e:
                 print(f"Error al extraer datos de un restaurante: {e}")
+
     else:
-        print(f"No se encontraron restaurantes en la zona de {ubicacion['nombre']}.")
+        print(f"No se encontraron restaurantes en {ubicacion['nombre']}.")
 
-# Crear un DataFrame con pandas
+# Crear DataFrame y exportar a Excel
 df = pd.DataFrame(data)
-
-# Exportar los datos a un archivo Excel
 df.to_excel("restaurantes_en_CDMX_zonas.xlsx", index=False, engine='openpyxl')
-print(f"Los datos han sido exportados a 'restaurantes_en_CDMX_zonas.xlsx'.")
+print("Los datos han sido exportados a 'restaurantes_en_CDMX_zonas.xlsx'.")
 
-# Cerrar el navegador al finalizar
+# Cerrar el navegador
 driver.quit()
-
-
-
